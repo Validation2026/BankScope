@@ -9,6 +9,7 @@ on:
       - 'src/bddk.py'
       - 'src/quality_gate.py'
       - 'src/pipeline.py'
+      - '.github/workflows/refresh.yml'
   workflow_dispatch:
   schedule:
     - cron: '35 14 * * 1-5' # UTC; CET/TR publication time checked on workdays
@@ -40,4 +41,9 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git config user.name 'github-actions[bot]'
           git add -A web/data/
-          git diff --cached --quiet || (git commit -m 'data: update verified official snapshots' && git push)
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: update verified official snapshots'
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
