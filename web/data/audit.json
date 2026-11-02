@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-02T13:24:37+00:00",
+  "run_at": "2026-11-02T13:39:55+00:00",
   "steps": [
     {
       "source": "bddk_weekly",
@@ -11,27 +11,44 @@
       "source": "bddk_weekly_history",
       "status": "partial_backfill",
       "new_periods": 16,
+      "rechecked_periods": 4,
       "available_periods": 669,
       "errors": []
     },
     {
       "source": "tbb_reports",
-      "status": "catalogued",
-      "records": 16
-    },
-    {
-      "source": "tbb_archives",
-      "status": "archived_pending_layout_validation",
-      "records": 2
+      "status": "failed",
+      "error": "HTTPSConnectionPool(host='www.tbb.org.tr', port=443): Max retries exceeded with url: /istatistiki-raporlar/search (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.tbb.org.tr', port=443) at 0x71fc241c2fd0>, 'Connection to www.tbb.org.tr timed"
     },
     {
       "source": "bddk_monthly",
       "status": "announcement_checked_unparsed",
       "release": "2026-09"
+    },
+    {
+      "source": "official_revisions",
+      "status": "checked",
+      "changed_observations": 0
     }
   ],
   "quality": {
     "weekly_periods": [
+      "2026-01-23",
+      "2026-01-30",
+      "2026-02-06",
+      "2026-02-13",
+      "2026-02-20",
+      "2026-02-27",
+      "2026-03-06",
+      "2026-03-13",
+      "2026-03-19",
+      "2026-03-27",
+      "2026-04-03",
+      "2026-04-10",
+      "2026-04-17",
+      "2026-04-24",
+      "2026-04-30",
+      "2026-05-08",
       "2026-05-15",
       "2026-05-22",
       "2026-05-26",
