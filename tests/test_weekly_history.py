@@ -6,8 +6,17 @@ from src.weekly_history import discover_period_form, collect_weekly_history, Sou
 
 
 def make_report(day):
-    html=f'<p>Tarih: {day} Ekim 2026 Cuma | Birim: Milyon TL</p><table>'
-    html+=''.join(f'<tr><td>{i}</td><td>Kredi {i}</td><td>500,125</td><td>6,125</td><td>506,250</td></tr>' for i in range(1,23))
+    from src.core import ROOT, IDS
+    from src.bddk import OFFICIAL_CREDIT_LABELS
+    import json
+    facts=json.loads((ROOT/'seed'/'bddk_2026_10_23_verified.json').read_text(encoding='utf-8'))
+    by_key={(r['metric_id'],r['currency']):r['value'] for r in facts}
+    html=f'<p>Tarih: {day} Ekim 2026 Cuma | Birim: Milyon TL</p><table id="TabloExcel2">'
+    html+='<tr><th></th><th>Sektör / Krediler</th><th>TP</th><th>YP</th><th>TOPLAM</th></tr>'
+    for n,metric in enumerate(IDS,1):
+        nums=[by_key[metric,c] for c in ('TP','YP','TOTAL')]
+        fmt=lambda x: f'{x:,.5f}'.replace(',','X').replace('.',',').replace('X','.')
+        html+=f'<tr><td>{n}</td><td>{OFFICIAL_CREDIT_LABELS[n-1]}</td>'+''.join(f'<td>{fmt(x)}</td>' for x in nums)+'</tr>'
     return html+'</table>'
 
 

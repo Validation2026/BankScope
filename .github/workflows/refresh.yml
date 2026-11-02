@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'src/weekly_history.py'
+      - 'src/bddk.py'
+      - 'src/quality_gate.py'
       - 'src/pipeline.py'
   workflow_dispatch:
   schedule:

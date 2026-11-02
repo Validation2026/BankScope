@@ -12,7 +12,9 @@ def snapshot():
 
 def test_existing_publication_passes_quality_gate():
     result = check_publication()
-    assert result['weekly_records'] == 66
+    assert result['weekly_records'] >= 66
+    assert result['weekly_records'] % 66 == 0
+    assert result['bddk_credit_identity_checks'] == result['weekly_periods'] * 3 * 7
     assert result['complete'] is False
 
 
@@ -34,7 +36,7 @@ def test_reject_mismatched_currency_total():
     doc = snapshot()
     row = next(r for r in doc['weekly'] if r['currency'] == 'TOTAL')
     row['value'] += 100
-    with pytest.raises(ValueError, match='reconciliation failed'):
+    with pytest.raises(ValueError, match='(reconciliation failed|accounting identity failed)'):
         check_snapshot(doc)
 
 

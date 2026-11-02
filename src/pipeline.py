@@ -37,7 +37,7 @@ def run(online=False,downloads=False):
    logs.append({'source':'bddk_weekly','status':'ok','period':period,'records':len(rows)})
   except Exception as exc:logs.append({'source':'bddk_weekly','status':'failed_last_verified_retained','error':str(exc)[:250]})
   try:
-   history=collect_weekly_history(processed_ids=result.get('weekly_backfill_completed_ids', []), max_reports=8)
+   history=collect_weekly_history(processed_ids=result.get('weekly_backfill_completed_ids', []), max_reports=16)
    if history['rows']:
     result['weekly']=merge_rows(result['weekly'],history['rows'])
    result['weekly_backfill_completed_ids']=sorted(set(result.get('weekly_backfill_completed_ids', []) + history['completed_ids']),key=int)
@@ -87,7 +87,7 @@ def run(online=False,downloads=False):
   except Exception as exc:logs.append({'source':'bddk_monthly','status':'failed','error':str(exc)[:250]})
  result['source_catalog']=catalog
  result['generated_at']=datetime.now(timezone.utc).isoformat(timespec='seconds')
- result['version']='0.2.0'
+ result['version']='0.4.0'
  result['sources']=SOURCES
  periods=sorted(set(x['period'] for x in result['weekly']))
  # Do not claim full coverage when only the credit tab is ingested.

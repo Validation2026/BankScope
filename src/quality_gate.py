@@ -12,7 +12,8 @@ from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
-from .core import DATA, validate_rows
+from .core import DATA, validate_rows, IDS, normalize
+from .bddk import OFFICIAL_CREDIT_LABELS, CREDIT_IDENTITIES
 
 
 def check_snapshot(snapshot: dict) -> dict:
@@ -59,6 +60,34 @@ def check_snapshot(snapshot: dict) -> dict:
                    row['metric_id'], row.get('bank_id', ''))
             aggregate[key][row.get('currency', 'TOTAL')] = row['value']
 
+    # A complete BDDK credit period has 22 lines x TP/YP/TOTAL. Distinct
+    # currency totals can reconcile even if accounting rows were swapped, so
+    # also validate the relationships explicitly stated by BDDK.
+    credit_by_period = defaultdict(lambda: defaultdict(dict))
+    for row in snapshot['weekly']:
+        if row.get('source') != 'bddk_weekly' or row.get('metric_id') not in IDS:
+            continue
+        idx = IDS.index(row['metric_id']) + 1
+        if row.get('source_row_number') not in (None, idx):
+            raise ValueError(f'Wrong BDDK row-number provenance: {idx}')
+        source_label = row.get('source_label')
+        if source_label is not None and normalize(source_label) != normalize(OFFICIAL_CREDIT_LABELS[idx - 1]):
+            raise ValueError(f'Wrong BDDK source-label provenance: {idx}')
+        if row.get('source_table_id') not in (None, 'TabloExcel2'):
+            raise ValueError('Wrong BDDK source table identity')
+        credit_by_period[row['period']][row['currency']][idx] = row['value']
+    identity_checks = 0
+    for period, currencies in credit_by_period.items():
+        if set(currencies) != {'TP', 'YP', 'TOTAL'}:
+            raise ValueError(f'Incomplete BDDK currencies for {period}')
+        for currency, lines in currencies.items():
+            if set(lines) != set(range(1, 23)):
+                raise ValueError(f'Incomplete BDDK credit rows for {period}/{currency}')
+            for target, components in CREDIT_IDENTITIES.items():
+                if abs(lines[target] - sum(lines[i] for i in components)) > 0.25:
+                    raise ValueError(f'BDDK accounting identity failed: {period}/{currency}/{target}')
+                identity_checks += 1
+
     # BDDK TP and YP columns are both TRY equivalents; rounding can introduce
     # a small difference between the two and published TOTAL.
     for key, values in aggregate.items():
@@ -71,6 +100,7 @@ def check_snapshot(snapshot: dict) -> dict:
         'monthly_records': len(snapshot['monthly']),
         'bank_records': len(snapshot['banks']),
         'weekly_periods': len({r['period'] for r in snapshot['weekly']}),
+        'bddk_credit_identity_checks': identity_checks,
         'complete': all(quality[x] for x in ('weekly_complete', 'monthly_complete', 'bank_financials_complete')),
     }
 

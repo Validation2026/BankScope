@@ -77,3 +77,12 @@ seçilmiş **Krediler** tablosu kapsanır; mevduat, NPL ve aylık tablolar
 henüz tam entegre değildir. `on.push` ilk doğrulanmış aktarımın test edilmesi
 için yalnızca ilgili kaynak dosyaları değişince çalışır; normalde hafta içi
 zamanlanan yenileme devam eder.
+
+## Doğruluk koruması (v0.4)
+
+- BDDK haftalık Krediler tablosunda yalnızca **TabloExcel2** yüksek hassasiyetli (orijinal sayısal tutarlar) kullanılır; diğer iki tablo yuvarlatılmıştır.
+- 22 satırın resmî Türkçe isimleri ve satır numaraları doğrulanır. BDDK tablo adını/biçimini değiştirirse eski veri korunur ve yeni kayıt reddedilir.
+- TP + YP = toplam mutabakatına ilave olarak resmî tabloda yazılı **7 finansal toplama eşitliği** üç para birimi sütununda doğrulanır. Tüm geçmiş dönemlerde bu denetimler yayın öncesinde tekrar uygulanır.
+- Kaynak etiketi, resmî tablo kimliği ve BDDK satır numarası yeni kayıtlarda saklanır. Eski kayıtlardaki metadata yokluğu tek başına onay anlamına gelmez.
+- Testler canlı tarihsel veri büyüdükçe sabit 66 gözleme kilitlenmez; kayıtların 22 × 3 bütünlüğünü ve aritmetiğini kontrol eder.
+- Bir çalışmada en fazla 16 eski haftanın resmi verisi kontrollü biçimde eklenir. Bu, **tam tarihsel kapsam sağlandığı** anlamına gelmez; doğrulanan dönemler açıkça raporlanır.
