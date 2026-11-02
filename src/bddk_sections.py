@@ -53,6 +53,8 @@ SECTION_SPECS = {
             "Resmi ve Diğer Kuruluşlar (9+10)", "a) Vadesiz", "b) Vadeli",
             "Sigortaya Tabi Mevduat (Bilgi)",
         ),
+        "optional_labels": {12:"Kur Korumalı TL Mevduat ve Katılma Hesapları (Bilgi için)"},
+        "optional_metric_ids": {12:"deposit_kkm_try"},
         "identities": {1:(2,5,8), 2:(3,4), 5:(6,7), 8:(9,10)},
     },
 }
@@ -76,6 +78,9 @@ DISPLAY_LABELS = {
         "Sigortaya Tabi Mevduat (Bilgi)",
     ),
 }
+
+OPTIONAL_DISPLAY_LABELS = {292: {12:"Kur Korumalı TL Mevduat ve Katılma Hesapları (Bilgi)"}}
+
 
 def parse_section_html(html: str, section_id: int):
     if section_id not in SECTION_SPECS:
@@ -109,7 +114,8 @@ def parse_section_html(html: str, section_id: int):
         if not cells or not re.fullmatch(r"\d{1,3}", cells[0]):
             continue
         idx = int(cells[0])
-        if len(cells) != 5 or idx < 1 or idx > len(spec["labels"]) or idx in lines:
+        allowed=set(range(1,len(spec["labels"])+1)) | set(spec.get("optional_labels",{}))
+        if len(cells) != 5 or idx not in allowed or idx in lines:
             raise ValueError("Incomplete, repeated or unexpected BDDK source row")
         values = [turkish_decimal(x) for x in cells[2:]]
         if any(v is None for v in values):
@@ -118,9 +124,12 @@ def parse_section_html(html: str, section_id: int):
             if any(v < 0 for v in values):
                 raise ValueError("Unexpected negative BDDK amount")
         lines[idx] = (cells[1], values)
-    if set(lines) != set(range(1,len(spec["labels"])+1)):
+    required=set(range(1,len(spec["labels"])+1))
+    allowed=required | set(spec.get("optional_labels",{}))
+    if not required.issubset(lines) or not set(lines).issubset(allowed):
         raise ValueError("Incomplete official BDDK rows")
-    for idx, expected in enumerate(spec["labels"], 1):
+    for idx in sorted(lines):
+        expected=spec["labels"][idx-1] if idx in required else spec["optional_labels"][idx]
         if normalize(lines[idx][0]) != normalize(expected):
             raise ValueError(f"Unexpected official source label {section_id}/{idx}")
         values = lines[idx][1]
@@ -132,14 +141,16 @@ def parse_section_html(html: str, section_id: int):
             if abs(diff) > 0.25:
                 raise ValueError(f"Balance hierarchy mismatch {section_id}/{total_idx}")
     results = []
-    for idx, metric in enumerate(spec["metric_ids"],1):
+    for idx in sorted(lines):
+        metric=spec["metric_ids"][idx-1] if idx in required else spec["optional_metric_ids"][idx]
+        label=DISPLAY_LABELS[section_id][idx-1] if idx in required else OPTIONAL_DISPLAY_LABELS[section_id][idx]
         original, triple = lines[idx]
         # Repeated labels such as 'a) Vadesiz' become unambiguous by parent path.
         for currency, value in zip(("TP","YP","TOTAL"), triple):
             results.append({
                 "source":"bddk_weekly", "source_url":SOURCES["bddk_weekly"],
                 "period":period, "scope":"sector", "group":spec["group"],
-                "metric_id":metric, "label":DISPLAY_LABELS[section_id][idx-1], "source_label":original,
+                "metric_id":metric, "label":label, "source_label":original,
                 "source_row_number":idx, "source_table_id":"TabloExcel2",
                 "source_section_id":section_id, "currency":currency,
                 "unit":"million_try", "value":value, "status":"official",
