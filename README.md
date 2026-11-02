@@ -52,3 +52,10 @@ netlify.toml                        ileride statik yayın
 6. Canlı GitHub Actions ve Netlify kurulumu; çoklu veri kaynağı yayım koşullarının gözden geçirilmesi.
 
 **Kamuya açık ve sürekli güncel bir ürün olarak yayınlamadan önce eksik kalemler tamamlanmalı ve kalite eşiği sağlanmalıdır.**
+
+## Otomatik kalite kapısı (v0.3)
+
+- Her `main` güncellemesinde ve pull request'te `.github/workflows/ci.yml` testleri çalıştırır.
+- `python -m src.quality_gate` yayınlanacak JSON ile JS verilerinin aynı olduğunu, tüm olguların kaynak/dönem/durum taşıdığını, TP + YP mutabakatını, gerçeği yansıtan kapsam bayraklarını ve denetim dosyasını doğrular.
+- Günlük veri yenileme betiği de aynı kalite kapısından geçer. **Bu, henüz eksik olan BDDK aylık ve banka çeyreklik verilerini tamamlamaz.**
+- Netlify `web/` dizinini yayımlar; resmî kaynaklara erişim ve veri güncellemesi GitHub Actions tarafında yapılır.

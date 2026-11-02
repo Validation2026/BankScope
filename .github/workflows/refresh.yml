@@ -17,6 +17,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
       - run: python -m src.pipeline --online --download-bank-archives
+      - run: python -m src.quality_gate
       - name: Save raw-source evidence for audit
         if: always()
         uses: actions/upload-artifact@v4
@@ -29,5 +30,5 @@ jobs:
         run: |
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git config user.name 'github-actions[bot]'
-          git add web/data/snapshot.json web/data/snapshot.js web/data/audit.json web/data/raw_bank_archive_status.json
+          git add -A web/data/
           git diff --cached --quiet || (git commit -m 'data: update verified official snapshots' && git push)
