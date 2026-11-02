@@ -1,8 +1,44 @@
 {
-  "run_at": "2026-11-02T12:31:06+00:00",
-  "steps": [],
+  "run_at": "2026-11-02T13:11:59+00:00",
+  "steps": [
+    {
+      "source": "bddk_weekly",
+      "status": "ok",
+      "period": "2026-10-23",
+      "records": 66
+    },
+    {
+      "source": "bddk_weekly_history",
+      "status": "partial_backfill",
+      "new_periods": 8,
+      "available_periods": 669,
+      "errors": []
+    },
+    {
+      "source": "tbb_reports",
+      "status": "catalogued",
+      "records": 16
+    },
+    {
+      "source": "tbb_archives",
+      "status": "archived_pending_layout_validation",
+      "records": 2
+    },
+    {
+      "source": "bddk_monthly",
+      "status": "announcement_checked_unparsed",
+      "release": "2026-09"
+    }
+  ],
   "quality": {
     "weekly_periods": [
+      "2026-09-04",
+      "2026-09-11",
+      "2026-09-18",
+      "2026-09-25",
+      "2026-10-02",
+      "2026-10-09",
+      "2026-10-16",
       "2026-10-23"
     ],
     "weekly_categories_covered": [
