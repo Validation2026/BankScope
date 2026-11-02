@@ -1,0 +1,33 @@
+name: Resmi verileri kontrol et ve dogrulanani yayinla
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 14 * * 1-5' # UTC; CET/TR publication time checked on workdays
+permissions:
+  contents: write
+concurrency: bankscope-data-refresh
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11', cache: 'pip' }
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+      - run: python -m src.pipeline --online --download-bank-archives
+      - name: Save raw-source evidence for audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: official-raw-archive
+          path: archive/
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Persist published datasets
+        run: |
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          git add web/data/snapshot.json web/data/snapshot.js web/data/audit.json web/data/raw_bank_archive_status.json
+          git diff --cached --quiet || (git commit -m 'data: update verified official snapshots' && git push)

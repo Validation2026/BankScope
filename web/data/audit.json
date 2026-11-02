@@ -1,0 +1,23 @@
+{
+  "run_at": "2026-11-02T12:31:06+00:00",
+  "steps": [],
+  "quality": {
+    "weekly_periods": [
+      "2026-10-23"
+    ],
+    "weekly_categories_covered": [
+      "Krediler"
+    ],
+    "weekly_complete": false,
+    "monthly_complete": false,
+    "bank_financials_complete": false,
+    "bank_count_verified": 0,
+    "missing_modules": [
+      "BDDK diğer haftalık sekmeler",
+      "BDDK aylık interaktif tarihsel seriler",
+      "TBB bankaların doğrulanmış finansal tablo kalemleri",
+      "TKBB katılım bankaları kapsam kontrolü"
+    ],
+    "status": "partial_verified"
+  }
+}
