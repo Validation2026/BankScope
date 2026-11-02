@@ -1,5 +1,10 @@
 name: Resmi verileri kontrol et ve dogrulanani yayinla
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/weekly_history.py'
+      - 'src/pipeline.py'
   workflow_dispatch:
   schedule:
     - cron: '35 14 * * 1-5' # UTC; CET/TR publication time checked on workdays

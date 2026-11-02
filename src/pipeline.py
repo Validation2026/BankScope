@@ -7,6 +7,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from .core import ROOT,DATA,ARCHIVE,SOURCES,IDS,METRICS,write_json,http_get,save_archive,validate_rows
 from .bddk import parse_weekly_html
+from .weekly_history import collect_weekly_history
 from .tbb import discover_report_pages,extract_attachment_links,archive_attachments
 
 SEED=ROOT/'seed'/'bddk_2026_10_23_verified.json'
@@ -35,6 +36,18 @@ def run(online=False,downloads=False):
    result['weekly']=merge_rows(result['weekly'],rows)
    logs.append({'source':'bddk_weekly','status':'ok','period':period,'records':len(rows)})
   except Exception as exc:logs.append({'source':'bddk_weekly','status':'failed_last_verified_retained','error':str(exc)[:250]})
+  try:
+   history=collect_weekly_history(processed_ids=result.get('weekly_backfill_completed_ids', []), max_reports=8)
+   if history['rows']:
+    result['weekly']=merge_rows(result['weekly'],history['rows'])
+   result['weekly_backfill_completed_ids']=sorted(set(result.get('weekly_backfill_completed_ids', []) + history['completed_ids']),key=int)
+   logs.append({'source':'bddk_weekly_history','status':'partial_backfill',
+                'new_periods':len(history['completed_ids']),
+                'available_periods':history['available_period_count'],
+                'errors':history['failures'][:2]})
+  except Exception as exc:
+   logs.append({'source':'bddk_weekly_history','status':'failed_last_verified_retained',
+                'error':str(exc)[:250]})
   try:
    # Paginated searchable TBB reports, with automated current and historical report discovery.
    all_pages=[];seen=set()

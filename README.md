@@ -59,3 +59,21 @@ netlify.toml                        ileride statik yayın
 - `python -m src.quality_gate` yayınlanacak JSON ile JS verilerinin aynı olduğunu, tüm olguların kaynak/dönem/durum taşıdığını, TP + YP mutabakatını, gerçeği yansıtan kapsam bayraklarını ve denetim dosyasını doğrular.
 - Günlük veri yenileme betiği de aynı kalite kapısından geçer. **Bu, henüz eksik olan BDDK aylık ve banka çeyreklik verilerini tamamlamaz.**
 - Netlify `web/` dizinini yayımlar; resmî kaynaklara erişim ve veri güncellemesi GitHub Actions tarafında yapılır.
+
+
+## Haftalık geçmiş veri otomasyonu (v0.3)
+
+`src/weekly_history.py`, BDDK resmi bülteninin dönem seçimini kendisi okuyarak
+aynı oturum ve CSRF belirteciyle, her yenilemede en fazla sekiz geçmiş haftanın
+**Krediler** tablosunu kontrol eder. Her tarihte 22 kalem × TP/YP/TOPLAM
+doğrulanmadan o dönem yayımlanmaz. Tamamlanan dönem kimlikleri
+`snapshot.json` içinde korunur, böylece sonraki çalışmada eski raporlar
+yerine yeni eksik haftalara geçilir. Toplam 669 seçim bulunması **669 rapor
+yayımlandı** anlamına gelmez; ilk canlı toplama sonrası kesin dönemi kontrol edin.
+
+2026-11-02'de bağımsız tanı akışıyla 16 ve 9 Ekim 2026 tarihleri için
+resmi seçiciden 200 yanıtı ve ayrı rapor tarihleri doğrulandı. Yalnızca
+seçilmiş **Krediler** tablosu kapsanır; mevduat, NPL ve aylık tablolar
+henüz tam entegre değildir. `on.push` ilk doğrulanmış aktarımın test edilmesi
+için yalnızca ilgili kaynak dosyaları değişince çalışır; normalde hafta içi
+zamanlanan yenileme devam eder.
