@@ -13,7 +13,11 @@ def snapshot():
 def test_existing_publication_passes_quality_gate():
     result = check_publication()
     assert result['weekly_records'] >= 66
-    assert result['weekly_records'] % 66 == 0
+    from src.core import IDS
+    doc=snapshot()
+    credit=[r for r in doc['weekly'] if r['metric_id'] in IDS]
+    assert len(credit)==66*len({r['period'] for r in credit})
+    assert result['bddk_other_section_identity_checks'] >= 0
     assert result['bddk_credit_identity_checks'] == result['weekly_periods'] * 3 * 7
     assert result['complete'] is False
 
