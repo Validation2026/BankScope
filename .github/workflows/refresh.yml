@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'src/weekly_history.py'
+      - 'src/weekly_sections_history.py'
+      - 'src/bddk_sections.py'
       - 'src/bddk.py'
       - 'src/quality_gate.py'
       - 'src/pipeline.py'
