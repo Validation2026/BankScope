@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .core import DATA, validate_rows, IDS, normalize
 from .bddk import OFFICIAL_CREDIT_LABELS, CREDIT_IDENTITIES
+from .bddk_sections import SECTION_SPECS
 
 
 def check_snapshot(snapshot: dict) -> dict:
@@ -88,6 +89,39 @@ def check_snapshot(snapshot: dict) -> dict:
                     raise ValueError(f'BDDK accounting identity failed: {period}/{currency}/{target}')
                 identity_checks += 1
 
+    # Every published deposit/NPL section is a complete original-source table,
+    # with exact official row names, three currency columns and all balances.
+    extra_section_checks = 0
+    all_new_metrics = {mid for spec in SECTION_SPECS.values() for mid in spec["metric_ids"]}
+    section_groups = defaultdict(lambda: defaultdict(dict))
+    for row in snapshot['weekly']:
+        if row.get('metric_id') not in all_new_metrics:
+            continue
+        section_id = row.get('source_section_id')
+        if section_id not in SECTION_SPECS:
+            raise ValueError('Missing official section ID for a BDDK weekly fact')
+        spec = SECTION_SPECS[section_id]
+        if row['metric_id'] not in spec['metric_ids'] or row.get('group') != spec['group']:
+            raise ValueError('Wrong weekly section provenance')
+        idx = spec['metric_ids'].index(row['metric_id'])+1
+        if row.get('source_row_number') != idx or row.get('source_table_id') != 'TabloExcel2':
+            raise ValueError('Wrong weekly source row or precision table')
+        if normalize(row.get('source_label','')) != normalize(spec['labels'][idx-1]):
+            raise ValueError('Wrong weekly source label')
+        section_groups[(row['period'],section_id)][row['currency']][idx] = row['value']
+    for (period,section_id), currencies in section_groups.items():
+        spec = SECTION_SPECS[section_id]
+        if set(currencies) != {'TP','YP','TOTAL'}:
+            raise ValueError('Incomplete weekly section currencies')
+        required=set(range(1,len(spec['labels'])+1))
+        for currency, lines in currencies.items():
+            if set(lines) != required:
+                raise ValueError('Incomplete weekly section rows')
+            for idx,parts in spec['identities'].items():
+                if abs(lines[idx]-sum(lines[k] for k in parts))>0.25:
+                    raise ValueError('Weekly section accounting identity failed')
+                extra_section_checks+=1
+
     # BDDK TP and YP columns are both TRY equivalents; rounding can introduce
     # a small difference between the two and published TOTAL.
     for key, values in aggregate.items():
@@ -101,6 +135,7 @@ def check_snapshot(snapshot: dict) -> dict:
         'bank_records': len(snapshot['banks']),
         'weekly_periods': len({r['period'] for r in snapshot['weekly']}),
         'bddk_credit_identity_checks': identity_checks,
+        'bddk_other_section_identity_checks': extra_section_checks,
         'complete': all(quality[x] for x in ('weekly_complete', 'monthly_complete', 'bank_financials_complete')),
     }
 
