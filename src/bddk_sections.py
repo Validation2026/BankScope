@@ -58,6 +58,25 @@ SECTION_SPECS = {
 }
 
 
+DISPLAY_LABELS = {
+    290: (
+        "Takipteki Alacaklar (Brüt)", "Takip - Bireysel Krediler ve Kartlar",
+        "Takip - Tüketici Kredileri", "Takip - Konut Kredileri",
+        "Takip - Taşıt Kredileri", "Takip - İhtiyaç Kredileri",
+        "Takip - Bireysel Kredi Kartları", "Takip - Ticari ve Diğer Krediler",
+        "Takip - Özel Karşılıklar", "Takip - Taksitli Ticari Krediler (Bilgi)",
+        "Takip - Kurumsal Kredi Kartları (Bilgi)", "Takip - KOBİ Kredileri (Bilgi)",
+    ),
+    292: (
+        "Toplam Mevduat ve Katılım Fonu", "Gerçek Kişi Mevduatı",
+        "Gerçek Kişi - Vadesiz", "Gerçek Kişi - Vadeli",
+        "Ticari Kuruluş Mevduatı", "Ticari Kuruluş - Vadesiz",
+        "Ticari Kuruluş - Vadeli", "Resmi ve Diğer Kuruluş Mevduatı",
+        "Resmi ve Diğer - Vadesiz", "Resmi ve Diğer - Vadeli",
+        "Sigortaya Tabi Mevduat (Bilgi)",
+    ),
+}
+
 def parse_section_html(html: str, section_id: int):
     if section_id not in SECTION_SPECS:
         raise ValueError("Unapproved BDDK section")
@@ -120,7 +139,7 @@ def parse_section_html(html: str, section_id: int):
             results.append({
                 "source":"bddk_weekly", "source_url":SOURCES["bddk_weekly"],
                 "period":period, "scope":"sector", "group":spec["group"],
-                "metric_id":metric, "label":original, "source_label":original,
+                "metric_id":metric, "label":DISPLAY_LABELS[section_id][idx-1], "source_label":original,
                 "source_row_number":idx, "source_table_id":"TabloExcel2",
                 "source_section_id":section_id, "currency":currency,
                 "unit":"million_try", "value":value, "status":"official",
