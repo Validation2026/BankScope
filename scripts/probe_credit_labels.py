@@ -18,7 +18,10 @@ def main():
             if n is not None and int(cells[n]) in range(1,23) and len(cells)>=n+5:
                 rows.append((int(cells[n]),cells[n+1]))
         if len(rows)>=20:
-            print('TABLE',table_index,'ROW_COUNT',len(rows))
+            print('TABLE',table_index,'ROW_COUNT',len(rows),'ID',table.get('id'), 'CLASS',table.get('class'))
+            for tr in table.select('tr')[:4]:
+                print('  HEAD', [td.get_text(' ',strip=True)[:70] for td in tr.find_all(['th','td'],recursive=False)][:10])
+            print('  ADJACENT',table.find_previous(['h2','h3','h4','h5','caption']).get_text(' ',strip=True)[:120] if table.find_previous(['h2','h3','h4','h5','caption']) else '')
             for idx,label in rows:
                 print(f'  {idx:02} {label}')
 
