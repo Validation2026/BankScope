@@ -143,8 +143,10 @@ def run(online=False,downloads=False):
  result['version']='0.7.0'
  result['sources']=SOURCES
  periods=sorted(set(x['period'] for x in result['weekly']))
+ groups=sorted({x.get('group','Krediler') for x in result['weekly']})
+ group_periods={g:sorted({x['period'] for x in result['weekly'] if x.get('group','Krediler')==g}) for g in groups}
  # Do not claim full coverage when only the credit tab is ingested.
- result['quality']={'weekly_periods':periods,'weekly_categories_covered':sorted({r.get('group','Krediler') for r in result['weekly']}),
+ result['quality']={'weekly_periods':periods,'weekly_categories_covered':groups,'weekly_periods_by_group':group_periods,
  'weekly_complete':False,'monthly_complete':False,'bank_financials_complete':False,
  'bank_count_verified':len(set(x.get('bank_id') for x in result['banks'] if x.get('bank_id'))),
  'missing_modules':['BDDK diğer haftalık sekmeler','BDDK aylık interaktif tarihsel seriler','TBB bankaların doğrulanmış finansal tablo kalemleri','TKBB katılım bankaları kapsam kontrolü'],
