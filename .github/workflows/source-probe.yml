@@ -7,6 +7,7 @@ on:
       - 'scripts/probe_credit_labels.py'
       - 'scripts/probe_weekly_tabs.py'
       - 'scripts/probe_weekly_sections.py'
+      - 'scripts/probe_weekly_section_history.py'
       - '.github/workflows/source-probe.yml'
 permissions:
   contents: read
@@ -24,6 +25,7 @@ jobs:
       - run: python -m scripts.probe_credit_labels
       - run: python scripts/probe_weekly_tabs.py
       - run: python scripts/probe_weekly_sections.py
+      - run: python -m scripts.probe_weekly_section_history
       - uses: actions/upload-artifact@v4
         with:
           name: bddk-public-form-structure
