@@ -9,6 +9,7 @@ from .core import ROOT,DATA,ARCHIVE,SOURCES,IDS,METRICS,write_json,http_get,save
 from .bddk import parse_weekly_html
 from .weekly_history import collect_weekly_history
 from .bddk_sections import collect_latest_sections
+from .weekly_sections_history import collect_section_histories
 from .tbb import discover_report_pages,extract_attachment_links,archive_attachments
 
 SEED=ROOT/'seed'/'bddk_2026_10_23_verified.json'
@@ -79,6 +80,20 @@ def run(online=False,downloads=False):
    logs.append({'source':'bddk_weekly_other_sections','status':'failed_last_verified_retained',
                 'error':str(exc)[:250]})
   try:
+   section_history=collect_section_histories(
+       completed_by_section=result.get('weekly_section_backfill_completed_ids',{}),
+       max_new=8, recheck_recent=2)
+   if section_history['rows']:
+    revisions.extend(source_revisions(result['weekly'],section_history['rows']))
+    result['weekly']=merge_rows(result['weekly'],section_history['rows'])
+   result['weekly_section_backfill_completed_ids']=section_history['completed_by_section']
+   logs.append({'source':'bddk_weekly_section_history','status':'partial_backfill',
+                'records':len(section_history['rows']),
+                'sections':section_history['details']})
+  except Exception as exc:
+   logs.append({'source':'bddk_weekly_section_history','status':'failed_last_verified_retained',
+                'error':str(exc)[:250]})
+  try:
    # Paginated searchable TBB reports, with automated current and historical report discovery.
    all_pages=[];seen=set()
    for page in range(5):
@@ -125,7 +140,7 @@ def run(online=False,downloads=False):
  logs.append({'source':'official_revisions','status':'checked','changed_observations':len(revisions)})
  result['source_catalog']=catalog
  result['generated_at']=datetime.now(timezone.utc).isoformat(timespec='seconds')
- result['version']='0.6.0'
+ result['version']='0.7.0'
  result['sources']=SOURCES
  periods=sorted(set(x['period'] for x in result['weekly']))
  # Do not claim full coverage when only the credit tab is ingested.
