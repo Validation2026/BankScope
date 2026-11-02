@@ -16,7 +16,7 @@ def fixture(section_id, wrong_header=False, broken=False):
     for idx,label in enumerate(spec["labels"],1):
         amount = values[idx] + (1 if broken and idx == 1 else 0)
         html += (f'<tr><td>{idx}</td><td>{label}</td>'
-                 f'<td>{amount*0.8:.3f}</td><td>{amount*0.2:.3f}</td><td>{amount:.3f}</td></tr>')
+                 f'<td>{amount*0.8:.3f}</td><td>{amount*0.2:.3f}</td><td>{amount:.3f}</td></tr>'.replace(".",","))
     return html + '</table>'
 
 
