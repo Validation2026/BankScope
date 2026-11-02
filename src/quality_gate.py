@@ -92,7 +92,8 @@ def check_snapshot(snapshot: dict) -> dict:
     # Every published deposit/NPL section is a complete original-source table,
     # with exact official row names, three currency columns and all balances.
     extra_section_checks = 0
-    all_new_metrics = {mid for spec in SECTION_SPECS.values() for mid in spec["metric_ids"]}
+    all_new_metrics = ({mid for spec in SECTION_SPECS.values() for mid in spec['metric_ids']} |
+                       {mid for spec in SECTION_SPECS.values() for mid in spec.get('optional_metric_ids',{}).values()})
     section_groups = defaultdict(lambda: defaultdict(dict))
     for row in snapshot['weekly']:
         if row.get('metric_id') not in all_new_metrics:
@@ -101,12 +102,21 @@ def check_snapshot(snapshot: dict) -> dict:
         if section_id not in SECTION_SPECS:
             raise ValueError('Missing official section ID for a BDDK weekly fact')
         spec = SECTION_SPECS[section_id]
-        if row['metric_id'] not in spec['metric_ids'] or row.get('group') != spec['group']:
+        optional_ids=spec.get('optional_metric_ids',{})
+        metrics=list(spec['metric_ids'])
+        if row.get('group') != spec['group']:
             raise ValueError('Wrong weekly section provenance')
-        idx = spec['metric_ids'].index(row['metric_id'])+1
+        if row['metric_id'] in metrics:
+            idx=metrics.index(row['metric_id'])+1
+            expected=spec['labels'][idx-1]
+        elif row['metric_id'] in optional_ids.values():
+            idx=next(k for k,v in optional_ids.items() if v==row['metric_id'])
+            expected=spec['optional_labels'][idx]
+        else:
+            raise ValueError('Wrong weekly section metric')
         if row.get('source_row_number') != idx or row.get('source_table_id') != 'TabloExcel2':
             raise ValueError('Wrong weekly source row or precision table')
-        if normalize(row.get('source_label','')) != normalize(spec['labels'][idx-1]):
+        if normalize(row.get('source_label','')) != normalize(expected):
             raise ValueError('Wrong weekly source label')
         section_groups[(row['period'],section_id)][row['currency']][idx] = row['value']
     for (period,section_id), currencies in section_groups.items():
@@ -114,8 +124,10 @@ def check_snapshot(snapshot: dict) -> dict:
         if set(currencies) != {'TP','YP','TOTAL'}:
             raise ValueError('Incomplete weekly section currencies')
         required=set(range(1,len(spec['labels'])+1))
+        allowed=required | set(spec.get('optional_labels',{}))
+        first=set(currencies['TOTAL'])
         for currency, lines in currencies.items():
-            if set(lines) != required:
+            if not required.issubset(lines) or not set(lines).issubset(allowed) or set(lines)!=first:
                 raise ValueError('Incomplete weekly section rows')
             for idx,parts in spec['identities'].items():
                 if abs(lines[idx]-sum(lines[k] for k in parts))>0.25:
