@@ -43,7 +43,9 @@ def test_tbb_link_discovery():
 
 def test_baseline_snapshot():
  logs,data=run(False,False)
- assert len(data['weekly']) >= 66 and len(data['weekly']) % 66 == 0
+ from src.core import IDS
+ credit=[r for r in data['weekly'] if r['metric_id'] in IDS]
+ assert len(credit)>=66 and len(credit)==66*len({r['period'] for r in credit})
  assert data['quality']['status']=='partial_verified'
  assert data['quality']['bank_financials_complete'] is False
  assert not data['banks']
