@@ -6,7 +6,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const trNumber=(n,d=2)=>Number.isFinite(Number(n))?Number(n).toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const dateText=s=>s?new Date(s+'T12:00:00').toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'}):'—';
 const names={overview:'Genel görünüm',weekly:'BDDK haftalık',monthly:'BDDK aylık',banks:'Banka finansalları',compare:'Karşılaştırma',quality:'Veri güvenilirliği',sources:'Kaynaklar ve yöntem'};
-let active='overview',curr='TOTAL',weekDate='',weekSearch='',bankDate='',bankScope='solo',compDate='',compScope='solo',compMetric='assets',selectedBanks=new Set();
+let active='overview',curr='TOTAL',weekDate='',weekSearch='',weekGroup='Krediler',bankDate='',bankScope='solo',compDate='',compScope='solo',compMetric='assets',selectedBanks=new Set();
 const dates=[...new Set(DATA.weekly.map(x=>x.period))].sort().reverse();weekDate=dates[0]||'';
 const bankPeriods=[...new Set(DATA.banks.map(x=>x.period))].sort().reverse();bankDate=compDate=bankPeriods[0]||'';
 function togglePage(page){active=names[page]?page:'overview';document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===active));document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===active));$('breadcrumb').textContent=names[active];history.replaceState(null,'','#'+active);render();window.scrollTo({top:0,behavior:'smooth'});}
@@ -15,7 +15,7 @@ function weekFacts(id,p=weekDate){return DATA.weekly.filter(x=>x.period===p&&x.m
 function val(id,p=weekDate){return weekFacts(id,p)?.value}
 function trill(v){return v==null?'—':trNumber(v/1e6,2)+' <small style="font-size:12px;color:#8997a8;letter-spacing:0">trilyon ₺</small>'}
 function short(v){return v==null?'—':trNumber(v/1e6,2)}
-function rowsForWeek(){return DATA.weekly.filter(x=>x.period===weekDate&&x.currency==='TOTAL')}
+function rowsForWeek(){return DATA.weekly.filter(x=>x.period===weekDate&&x.currency==='TOTAL'&&x.group===weekGroup)}
 function bars(target,rows,scale=1,unit=''){const max=Math.max(0,...rows.map(x=>x.value));$(target).innerHTML=rows.map(x=>`<div class="bar-row"><div class="bar-label-row"><span>${esc(x.label)}</span><strong>${trNumber(x.value/scale,2)} ${esc(unit)}</strong></div><div class="track"><div class="fill" style="width:${max>0?Math.max(0,100*x.value/max):0}%"></div></div></div>`).join('')||'<p class="muted">Gösterilecek doğrulanmış veri yok.</p>'}
 function renderOverview(){
  $('overview-date').textContent='Dönem sonu • '+dateText(dates[0]);
@@ -27,13 +27,14 @@ function renderOverview(){
 }
 function fillOptions(id,items){$(id).innerHTML=items.length?items.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''):'<option value="">Henüz veri yok</option>'}
 function renderWeekly(){
- $('week-date').value=weekDate;$('week-currency').value=curr;$('week-search').value=weekSearch;
+ $('week-date').value=weekDate;$('week-currency').value=curr;$('week-search').value=weekSearch;$('week-group').value=weekGroup;
  const lines=rowsForWeek().filter(x=>(x.label+' '+x.metric_id).toLocaleLowerCase('tr-TR').includes(weekSearch.toLocaleLowerCase('tr-TR')));
- const mapping=new Map(DATA.weekly.filter(x=>x.period===weekDate).map(x=>[x.metric_id+'|'+x.currency,x.value]));
+ const mapping=new Map(DATA.weekly.filter(x=>x.period===weekDate&&x.group===weekGroup).map(x=>[x.metric_id+'|'+x.currency,x.value]));
  $('weekly-table').innerHTML=lines.map(x=>`<tr><td>${esc(x.label)} ${x.label.includes('Bilgi')?'<span style="color:#9faaba">•</span>':''}</td><td class="num">${trNumber(mapping.get(x.metric_id+'|TP'))}</td><td class="num">${trNumber(mapping.get(x.metric_id+'|YP'))}</td><td class="num"><strong>${trNumber(mapping.get(x.metric_id+'|TOTAL'))}</strong></td></tr>`).join('')||'<tr><td colspan="4">Eşleşen veri bulunamadı.</td></tr>';
- $('week-count').textContent=lines.length+' resmi kredi kalemi';$('week-total').textContent=trNumber(val('total_loans'),2);
- const keyList=['total_loans','commercial_other_loans','retail_plus_cards','sme_loans','consumer_loans','retail_cards'];
- const values=keyList.map(id=>({id,metric:DATA.weekly.find(x=>x.period===weekDate&&x.metric_id===id&&x.currency===curr)})).filter(x=>x.metric).map(x=>({label:x.metric.label,value:x.metric.value}));bars('weekly-chart',values,1e6,'trilyon TL');
+ const summaries={'Krediler':['total_loans','Toplam Krediler'],'Mevduat':['deposit_total','Toplam Mevduat ve Katılım Fonu'],'Takipteki Alacaklar':['npl_total','Brüt Takipteki Alacaklar']};const h=summaries[weekGroup]||['total_loans','Toplam Krediler'];
+ $('week-count').textContent=lines.length+' resmî gösterge';$('week-total').textContent=trNumber(val(h[0]),2);$('week-headline-label').textContent=h[1]+' · Seçilen para birimi · Milyon TL';
+ const keyList=weekGroup==='Mevduat'?['deposit_total','deposit_households','deposit_businesses','deposit_public_other','deposit_insured']:weekGroup==='Takipteki Alacaklar'?['npl_total','npl_retail_plus_cards','npl_consumer_loans','npl_retail_cards','npl_commercial_other']:['total_loans','commercial_other_loans','retail_plus_cards','sme_loans','consumer_loans','retail_cards'];
+ const values=keyList.map(id=>({id,metric:DATA.weekly.find(x=>x.period===weekDate&&x.metric_id===id&&x.currency===curr&&x.group===weekGroup)})).filter(x=>x.metric).map(x=>({label:x.metric.label,value:x.metric.value}));bars('weekly-chart',values,1e6,'trilyon TL');
 }
 function bankRowSet(p,scope){return DATA.banks.filter(x=>x.period===p&&x.scope===scope)}
 function renderMonthly(){
@@ -66,7 +67,7 @@ function renderSources(){const sections=[['BDDK Haftalık Bülten','Kredi ve sek
  $('sources-grid').innerHTML=sections.map(([name,descr,url])=>`<div class="source-item"><b>${esc(name)}</b><p>${esc(descr)}</p><a href="${esc(url||'#')}" target="_blank" rel="noopener noreferrer">Kaynağı incele ↗</a></div>`).join('');}
 function render(){({overview:renderOverview,weekly:renderWeekly,monthly:renderMonthly,banks:renderBanks,compare:renderCompare,quality:renderQuality,sources:renderSources})[active]();}
 function csvExport(){let lines=[];let filename='bankscope_export';
- if(active==='weekly'||active==='overview'){lines=DATA.weekly.filter(x=>x.period===(active==='overview'?dates[0]:weekDate));filename='bddk_haftalik_'+(weekDate||dates[0]);}
+ if(active==='weekly'||active==='overview'){lines=DATA.weekly.filter(x=>x.period===(active==='overview'?dates[0]:weekDate)&&(active==='overview'?x.group==='Krediler':x.group===weekGroup));filename='bddk_haftalik_'+(weekDate||dates[0]);}
  else if(active==='monthly'){lines=DATA.monthly;filename='bddk_aylik';}
  else if(active==='banks'){lines=bankRowSet(bankDate,bankScope);filename='banka_finansallari_'+bankDate;}
  else if(active==='compare'){lines=bankRowSet(compDate,compScope).filter(x=>selectedBanks.has(x.bank_id));filename='banka_karsilastirma';}
@@ -75,13 +76,14 @@ function csvExport(){let lines=[];let filename='bankscope_export';
  const fields=Object.keys(lines[0]);const quote=x=>{let s=String(x??'');return /[;\n\r"]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
  const csv='\uFEFF'+[fields.join(';'),...lines.map(x=>fields.map(k=>quote(x[k])).join(';'))].join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download=filename+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function init(){
- fillOptions('week-date',dates);fillOptions('bank-period',bankPeriods);fillOptions('compare-period',bankPeriods);
+ fillOptions('week-group',['Krediler','Mevduat','Takipteki Alacaklar'].filter(g=>DATA.weekly.some(x=>x.group===g)));fillOptions('week-date',dates);fillOptions('bank-period',bankPeriods);fillOptions('compare-period',bankPeriods);
  const q=DATA.quality||{};$('last-updated').textContent='Doğrulanmış son kesit: '+dateText(dates[0]);
  $('alert-message').textContent='Haftalık kredi kesiti doğrulandı; aylık tablolar ve 10 bankanın finansalları henüz eksik. Eksik alanlara tahmini değer konulmadı.';
  document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>togglePage(b.dataset.page)));
  document.querySelectorAll('[data-target]').forEach(b=>b.addEventListener('click',()=>togglePage(b.dataset.target)));
  $('showQuality').addEventListener('click',()=>togglePage('quality'));
  $('print').addEventListener('click',()=>window.print());$('export').addEventListener('click',csvExport);
+ $('week-group').addEventListener('change',e=>{weekGroup=e.target.value;const groupDates=[...new Set(DATA.weekly.filter(x=>x.group===weekGroup).map(x=>x.period))].sort().reverse();weekDate=groupDates[0]||'';fillOptions('week-date',groupDates);renderWeekly()});
  $('week-date').addEventListener('change',e=>{weekDate=e.target.value;renderWeekly()});
  $('week-currency').addEventListener('change',e=>{curr=e.target.value;renderWeekly()});
  $('week-search').addEventListener('input',e=>{weekSearch=e.target.value;renderWeekly();$('week-search').focus()});
