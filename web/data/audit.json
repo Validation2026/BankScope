@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-02T13:39:55+00:00",
+  "run_at": "2026-11-02T13:53:40+00:00",
   "steps": [
     {
       "source": "bddk_weekly",
@@ -16,9 +16,24 @@
       "errors": []
     },
     {
+      "source": "bddk_weekly_other_sections",
+      "status": "verified",
+      "sections": [
+        290,
+        292
+      ],
+      "records": 69,
+      "errors": []
+    },
+    {
       "source": "tbb_reports",
-      "status": "failed",
-      "error": "HTTPSConnectionPool(host='www.tbb.org.tr', port=443): Max retries exceeded with url: /istatistiki-raporlar/search (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.tbb.org.tr', port=443) at 0x71fc241c2fd0>, 'Connection to www.tbb.org.tr timed"
+      "status": "catalogued",
+      "records": 16
+    },
+    {
+      "source": "tbb_archives",
+      "status": "archived_pending_layout_validation",
+      "records": 2
     },
     {
       "source": "bddk_monthly",
@@ -33,6 +48,22 @@
   ],
   "quality": {
     "weekly_periods": [
+      "2025-10-03",
+      "2025-10-10",
+      "2025-10-17",
+      "2025-10-24",
+      "2025-10-31",
+      "2025-11-07",
+      "2025-11-14",
+      "2025-11-21",
+      "2025-11-28",
+      "2025-12-05",
+      "2025-12-12",
+      "2025-12-19",
+      "2025-12-26",
+      "2026-01-02",
+      "2026-01-09",
+      "2026-01-16",
       "2026-01-23",
       "2026-01-30",
       "2026-02-06",
@@ -75,7 +106,9 @@
       "2026-10-23"
     ],
     "weekly_categories_covered": [
-      "Krediler"
+      "Krediler",
+      "Mevduat",
+      "Takipteki Alacaklar"
     ],
     "weekly_complete": false,
     "monthly_complete": false,
