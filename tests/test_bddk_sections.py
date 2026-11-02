@@ -49,3 +49,21 @@ def test_reject_different_source_label():
 def test_reject_rounded_table():
     with pytest.raises(ValueError,match="high-precision"):
         parse_section_html(fixture(290).replace("TabloExcel2","TabloExcel"),290)
+
+
+def test_historical_kkm_information_row_is_optional_and_not_summed_twice():
+    extra=('<tr><td>12</td><td>Kur Korumalı TL Mevduat ve Katılma Hesapları (Bilgi için)</td>'
+           '<td>75,125</td><td>0,000</td><td>75,125</td></tr>')
+    html=fixture(292).replace('</table>',extra+'</table>')
+    period,rows=parse_section_html(html,292)
+    assert len(rows)==36
+    kkm=[r for r in rows if r['metric_id']=='deposit_kkm_try']
+    assert len(kkm)==3
+    assert {r['currency']:r['value'] for r in kkm}['TOTAL']==75.125
+    assert all(r['source_row_number']==12 for r in kkm)
+
+
+def test_unrecognized_extra_deposit_row_is_rejected():
+    extra='<tr><td>12</td><td>Unknown Bank Total</td><td>0,000</td><td>0,000</td><td>0,000</td></tr>'
+    with pytest.raises(ValueError,match="source label"):
+        parse_section_html(fixture(292).replace('</table>',extra+'</table>'),292)
