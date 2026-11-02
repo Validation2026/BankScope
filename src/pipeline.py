@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from .core import ROOT,DATA,ARCHIVE,SOURCES,IDS,METRICS,write_json,http_get,save_archive,validate_rows
 from .bddk import parse_weekly_html
 from .weekly_history import collect_weekly_history
+from .bddk_sections import collect_latest_sections
 from .tbb import discover_report_pages,extract_attachment_links,archive_attachments
 
 SEED=ROOT/'seed'/'bddk_2026_10_23_verified.json'
@@ -66,6 +67,18 @@ def run(online=False,downloads=False):
    logs.append({'source':'bddk_weekly_history','status':'failed_last_verified_retained',
                 'error':str(exc)[:250]})
   try:
+   other=collect_latest_sections()
+   if other['rows']:
+    revisions.extend(source_revisions(result['weekly'],other['rows']))
+    result['weekly']=merge_rows(result['weekly'],other['rows'])
+   logs.append({'source':'bddk_weekly_other_sections',
+                'status':'verified' if len(other['sections_found'])==2 else 'partial',
+                'sections':other['sections_found'],'records':len(other['rows']),
+                'errors':other['errors']})
+  except Exception as exc:
+   logs.append({'source':'bddk_weekly_other_sections','status':'failed_last_verified_retained',
+                'error':str(exc)[:250]})
+  try:
    # Paginated searchable TBB reports, with automated current and historical report discovery.
    all_pages=[];seen=set()
    for page in range(5):
@@ -112,11 +125,11 @@ def run(online=False,downloads=False):
  logs.append({'source':'official_revisions','status':'checked','changed_observations':len(revisions)})
  result['source_catalog']=catalog
  result['generated_at']=datetime.now(timezone.utc).isoformat(timespec='seconds')
- result['version']='0.5.0'
+ result['version']='0.6.0'
  result['sources']=SOURCES
  periods=sorted(set(x['period'] for x in result['weekly']))
  # Do not claim full coverage when only the credit tab is ingested.
- result['quality']={'weekly_periods':periods,'weekly_categories_covered':['Krediler'],
+ result['quality']={'weekly_periods':periods,'weekly_categories_covered':sorted({r.get('group','Krediler') for r in result['weekly']}),
  'weekly_complete':False,'monthly_complete':False,'bank_financials_complete':False,
  'bank_count_verified':len(set(x.get('bank_id') for x in result['banks'] if x.get('bank_id'))),
  'missing_modules':['BDDK diğer haftalık sekmeler','BDDK aylık interaktif tarihsel seriler','TBB bankaların doğrulanmış finansal tablo kalemleri','TKBB katılım bankaları kapsam kontrolü'],
