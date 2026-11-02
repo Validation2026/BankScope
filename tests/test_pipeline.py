@@ -47,3 +47,12 @@ def test_baseline_snapshot():
  assert data['quality']['status']=='partial_verified'
  assert data['quality']['bank_financials_complete'] is False
  assert not data['banks']
+
+
+def test_source_revisions_only_reports_existing_changed_numbers():
+    from src.pipeline import source_revisions
+    base={'source':'bddk_weekly','period':'2026-10-23','scope':'sector',
+          'metric_id':'total_loans','currency':'TP','unit':'million_try','value':200.0}
+    assert source_revisions([base], [dict(base)])==[]
+    assert source_revisions([base], [dict(base,value=201.0)])[0]['old_value']==200.0
+    assert source_revisions([], [dict(base,value=201.0)])==[]

@@ -44,7 +44,7 @@ def discover_period_form(html: str, base_url: str):
     return action, values, csrf
 
 
-def collect_weekly_history(processed_ids=(), max_reports=8, min_year=2022, session=None):
+def collect_weekly_history(processed_ids=(), max_reports=8, min_year=2022, session=None, recheck_recent=0):
     """Return all-or-nothing verified rows per weekly report and IDs accepted.
 
     One request per reporting period, no future periods or unverified totals.
@@ -58,13 +58,17 @@ def collect_weekly_history(processed_ids=(), max_reports=8, min_year=2022, sessi
     response.raise_for_status()
     action, periods, csrf = discover_period_form(response.text, response.url)
     processed = set(map(str, processed_ids))
+    # BDDK historical data can be revised after first publication. Recheck
+    # a small recent window rather than treating ingested IDs as immutable.
+    recent_ids = {x for x in sorted(processed, key=int, reverse=True)[:recheck_recent]}
     output, completed, failures = [], [], []
     last_year = date.today().year
     for entry in periods:
-        if len(completed) >= max_reports:
+        # max_reports limits new periods; revision checks have their own quota.
+        if len(completed) >= max_reports + len(recent_ids):
             break
         id_ = entry['id']
-        if id_ in processed:
+        if id_ in processed and id_ not in recent_ids:
             continue
         # If year cannot be inferred from the option, let the server resolve
         # the period ID; verify the response's exact reporting date below.
@@ -99,5 +103,7 @@ def collect_weekly_history(processed_ids=(), max_reports=8, min_year=2022, sessi
             # If the report form no longer works, avoid hammering the source.
             if len(failures) >= 2:
                 break
-    return {'rows': output, 'completed_ids': completed, 'failures': failures,
+    return {'rows': output, 'completed_ids': completed,
+            'rechecked_ids': [x for x in completed if x in processed],
+            'new_ids': [x for x in completed if x not in processed], 'failures': failures,
             'available_period_count': len(periods)}
