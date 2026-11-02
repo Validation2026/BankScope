@@ -26,7 +26,7 @@ token_value = token.get("value") if token else None
 if not endpoint.startswith("https://www.bddk.gov.tr/BultenHaftalik/"):
     raise RuntimeError("Unexpected endpoint")
 
-for table_id in range(1, 9):
+for table_id in [289, 290, 292, 293, 297]:
     values = {"tabloId": str(table_id)}
     if token_value:
         values["__RequestVerificationToken"] = token_value
